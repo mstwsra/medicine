@@ -26,7 +26,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const medId = urlParams.get('id'); 
 
     if (medId) {
-        fetchMedicineData(medId);
+        // 🌟 เพิ่มปุ่มให้ผู้ใช้กดเพื่อปลดล็อกระบบเสียงบนมือถือ 🌟
+        const startBtn = document.createElement('button');
+        startBtn.innerHTML = "🔊 แตะเพื่อเปิดระบบเสียงและเริ่มทำงาน";
+        startBtn.style.cssText = "display: block; width: 90%; max-width: 350px; padding: 18px; margin: 30px auto; background-color: #3498db; color: white; font-size: 18px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; font-family: 'Sarabun', sans-serif; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); animation: pulse 2s infinite;";
+        
+        // หาที่สำหรับวางปุ่ม
+        const mainContainer = document.getElementById('mainText')?.parentElement || document.body;
+        mainContainer.appendChild(startBtn);
+
+        updateUI("รอการยืนยัน", "กรุณากดปุ่มด้านล่างเพื่อเปิดเสียง");
+
+        startBtn.addEventListener('click', () => {
+            startBtn.remove(); // ลบปุ่มทิ้งหลังกด
+            
+            // สั่งปลดล็อก Audio Context ของเบราว์เซอร์มือถือ
+            const unlockAudio = new Audio();
+            unlockAudio.play().catch(() => {});
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+
+            // เริ่มค้นหาข้อมูลและพูดตามปกติ
+            fetchMedicineData(medId);
+        });
     }
 });
 
@@ -214,7 +235,7 @@ async function confirmMedication() {
     const finalUserId = storedUserId || currentMedicine.user_id;
 
     if (!finalUserId) {
-        updateUI('❌ ไม่พบข้อมูลผู้ใช้', 'กรุณาตั้งค่าผู้ใช้ในหน้า setup');
+        updateUI('❌ ไม่พบข้อมูลผู้ใช้', 'กรุณาตั้งค่าผู้ใช้ในหน้าตั้งค่า');
         speak("ไม่พบข้อมูลผู้ใช้ครับ");
         return;
     }
