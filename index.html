@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบช่วยเหลือการทานยา</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0B132B;
+            --text-main: #FFFFFF;
+            --text-sub: #A0ABC0;
+            --accent-color: #1C7ED6;
+            --accent-glow: rgba(28, 126, 214, 0.5);
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        /* ส่วนหัวแอป */
+        header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-top: 20px;
+        }
+        
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-main);
+        }
+
+        /* ส่วนข้อความสถานะ */
+        .status-container {
+            margin-top: 10vh;
+            padding: 0 20px;
+        }
+
+        h2#mainText {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        p#subText {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            margin-top: 10px;
+        }
+
+        /* ส่วนไอคอนลำโพงตรงกลาง */
+        .speaker-wrapper {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 10vh auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .speaker-circle {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            background-color: var(--bg-color);
+            transition: all 0.3s ease;
+        }
+
+        .speaker-icon {
+            width: 50px;
+            height: 50px;
+            fill: var(--text-main);
+        }
+
+        /* อนิเมชันกระเพื่อม (Ripple) */
+        .ripple {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-color);
+            opacity: 0;
+            z-index: 1;
+        }
+
+        /* คลาส playing จะถูกเพิ่มด้วย JS ตอนเสียงพูด */
+        .playing .ripple:nth-child(1) { animation: ripple-anim 1.5s infinite linear; }
+        .playing .ripple:nth-child(2) { animation: ripple-anim 1.5s infinite linear 0.75s; }
+        .playing .speaker-circle { box-shadow: 0 0 30px var(--accent-glow); }
+
+        @keyframes ripple-anim {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        /* อนิเมชันคลื่นเสียงด้านล่าง (Waveform) */
+        .waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 60px;
+            margin-top: auto;
+            margin-bottom: 20px;
+            opacity: 0; /* ซ่อนไว้ตอนไม่ได้พูด */
+            transition: opacity 0.3s;
+        }
+
+        .playing ~ .waveform, .playing-wave {
+            opacity: 1;
+        }
+
+        .bar {
+            width: 4px;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 4px;
+        }
+
+        /* ทำให้แต่ละแท่งเต้นไม่พร้อมกัน */
+        .playing-wave .bar { animation: eq 1s infinite ease-in-out; }
+        .playing-wave .bar:nth-child(1) { animation-delay: 0.1s; }
+        .playing-wave .bar:nth-child(2) { animation-delay: 0.4s; }
+        .playing-wave .bar:nth-child(3) { animation-delay: 0.2s; }
+        .playing-wave .bar:nth-child(4) { animation-delay: 0.5s; }
+        .playing-wave .bar:nth-child(5) { animation-delay: 0.3s; }
+        .playing-wave .bar:nth-child(6) { animation-delay: 0.6s; }
+        .playing-wave .bar:nth-child(7) { animation-delay: 0.2s; }
+        .playing-wave .bar:nth-child(8) { animation-delay: 0.4s; }
+        .playing-wave .bar:nth-child(9) { animation-delay: 0.1s; }
+
+        @keyframes eq {
+            0%, 100% { height: 10px; }
+            50% { height: 50px; }
+        }
+
+        /* ปุ่มบันทึกข้อมูล */
+        .action-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            width: 80%;
+            max-width: 300px;
+            margin: 0 auto 40px auto;
+            display: none; /* ซ่อนไว้จนกว่าจะสแกนยา */
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <svg class="logo-icon" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+        </svg>
+        <span>ระบบจัดการยา</span>
+    </header>
+
+    <div class="status-container">
+        <h2 id="mainText">แตะเพื่อสแกนยา</h2>
+        <p id="subText">นำโทรศัพท์แตะที่แผ่น NFC บนซองยา</p>
+    </div>
+
+    <div class="speaker-wrapper" id="speakerAnimation">
+        <div class="ripple"></div>
+        <div class="ripple"></div>
+        <div class="speaker-circle">
+            <svg class="speaker-icon" viewBox="0 0 24 24">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="waveform" id="waveformAnimation">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+
+    <button class="action-btn" id="confirmBtn" onclick="confirmMedication()">บันทึกการกินยา</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>

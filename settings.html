@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตั้งค่าการแจ้งเตือน - MedCare</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="admin.css">
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; margin: 0; }
+        
+        /* ---------------------------------------------------
+           ส่วน Topbar & โปรไฟล์ผู้ใช้
+        --------------------------------------------------- */
+        .user-profile-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3498db;
+            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.2);
+            background-color: #ebf5fb;
+        }
+
+        .user-profile { font-weight: 600; color: #1e3d59; font-size: 15px; }
+        
+        .logout-btn { 
+            background-color: #e74c3c; color: white; border: none; padding: 8px 15px; 
+            border-radius: 8px; cursor: pointer; font-family: 'Sarabun'; font-weight: 500; transition: background 0.3s;
+            margin-left: 10px;
+        }
+        .logout-btn:hover { background-color: #c0392b; }
+
+        /* ---------------------------------------------------
+           ส่วนฟอร์มตั้งค่า
+        --------------------------------------------------- */
+        .settings-card { 
+            background: white; padding: 30px; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; 
+            margin: 20px auto; border: 1px solid #f0f2f5;
+        }
+        .settings-card h4 { margin-top: 0; color: #1e3d59; font-size: 18px; border-bottom: 2px solid #eef2f5; padding-bottom: 15px; margin-bottom: 25px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { font-weight: 600; color: #34495e; display: block; margin-bottom: 8px; font-size: 15px; }
+        
+        .form-input { 
+            width: 100%; padding: 14px; border: 1px solid #dcdde1; border-radius: 10px; 
+            box-sizing: border-box; font-family: 'Sarabun'; font-size: 15px; background-color: #fbfcfd;
+            transition: all 0.3s ease; color: #2f3640;
+        }
+        .form-input:focus { border-color: #3498db; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); outline: none; }
+        
+        .btn-group { display: flex; gap: 15px; margin-top: 30px; }
+        .save-btn { background-color: #2ecc71; color: white; border: none; padding: 14px 20px; border-radius: 10px; cursor: pointer; flex: 1; font-weight: 600; font-family: 'Sarabun'; font-size: 16px; transition: all 0.3s; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2); }
+        .save-btn:hover { background-color: #27ae60; transform: translateY(-2px); }
+        
+        .test-btn { background-color: #3498db; color: white; border: none; padding: 14px 20px; border-radius: 10px; cursor: pointer; flex: 1; font-weight: 600; font-family: 'Sarabun'; font-size: 16px; transition: all 0.3s; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2); }
+        .test-btn:hover { background-color: #2980b9; transform: translateY(-2px); }
+
+        /* ---------------------------------------------------
+           Bottom Navigation (ซ่อนในคอมพิวเตอร์)
+        --------------------------------------------------- */
+        .bottom-nav { display: none; }
+
+        /* =========================================
+           📱 โหมดมือถือ (Mobile Responsive)
+        ========================================= */
+        @media (max-width: 768px) {
+            .app-container { padding-bottom: 100px; }
+            .content-wrapper { padding: 15px !important; overflow-x: hidden; }
+            
+            #openSidebar { display: none !important; }
+            .sidebar { display: none !important; }
+
+            /* ปรับ Topbar ให้โปรไฟล์และชื่อจัดเรียงสวยงาม */
+            .topbar { flex-wrap: wrap; gap: 10px; padding: 15px; justify-content: space-between; }
+            .page-title { font-size: 18px; margin: 0; font-weight: 700; color: #1e3d59; }
+            
+            .user-profile-group { width: 100%; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef2f5; }
+            .profile-pic { width: 35px; height: 35px; }
+            .user-profile { font-size: 14px; }
+            .logout-btn { font-size: 13px; padding: 8px 12px; margin-left: auto; }
+
+            .settings-card { padding: 20px; border-radius: 16px; margin: 10px; }
+            .btn-group { flex-direction: column; gap: 10px; }
+
+            /* 🌟 ดีไซน์ Bottom Navigation สไตล์แอปการแพทย์พรีเมียม 🌟 */
+            .bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+                left: 50%;
+                transform: translateX(-50%);
+                width: 92%;
+                background-color: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 24px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                z-index: 1000;
+                justify-content: space-around;
+                align-items: center;
+                padding: 8px 5px;
+            }
+
+            .bottom-nav a {
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                text-decoration: none; color: #a4b0be; font-size: 11px; font-family: 'Sarabun', sans-serif;
+                font-weight: 500; padding: 8px 15px; border-radius: 18px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .bottom-nav a .nav-icon { font-size: 22px; margin-bottom: 2px; filter: grayscale(100%); opacity: 0.6; transition: transform 0.3s ease; }
+            .bottom-nav a.active { background-color: #ebf5fb; color: #2980b9; font-weight: 700; }
+            .bottom-nav a.active .nav-icon { filter: grayscale(0%); opacity: 1; transform: translateY(-2px) scale(1.15); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar (แสดงเฉพาะบนคอมพิวเตอร์) -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>MedCare</h2>
+                <button class="close-btn" id="closeSidebar">✖</button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin.html">จัดการข้อมูลยา</a>
+                <a href="history.html">ประวัติการทานยา</a>
+                <a href="analytics.html">แดชบอร์ดสุขภาพ</a>
+                <a href="settings.html" class="active">ตั้งค่าการแจ้งเตือน</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="openSidebar" class="menu-btn">☰</button>
+                    <h3 class="page-title">ตั้งค่าการแจ้งเตือน</h3>
+                </div>
+                <!-- ส่วนแสดงรูปโปรไฟล์และชื่อ -->
+                <div class="user-profile-group">
+                    <!-- รูปโปรไฟล์เริ่มต้น (Placeholder) -->
+                    <img src="https://ui-avatars.com/api/?name=User&background=ebf5fb&color=2980b9&rounded=true" alt="Profile" id="user-profile-pic" class="profile-pic">
+                    <span id="user-display-name" class="user-profile">กำลังโหลดชื่อ...</span>
+                    <button id="logoutBtn" class="logout-btn">ออกจากระบบ</button>
+                </div>
+            </header>
+
+            <div class="content-wrapper" style="display: block; padding: 25px;">
+                <div class="settings-card">
+                    <h4>ลงข้อมูลเเจ้งเตือน</h4>
+                    
+                    <div class="form-group">
+                        <label>LINE User ID (ผู้ใช้งาน)</label>
+                        <input type="text" id="lineUserId" class="form-input" placeholder="Uxxxxxxxxxxxxxxx">
+                    </div>
+
+                    <div class="form-group">
+                        <label>LINE User ID (ผู้ดูแล)</label>
+                        <input type="text" id="relativeLineId" class="form-input" placeholder="Uxxxxxxxxxxxxxxx">
+                    </div>
+
+                    <div class="btn-group">
+                        <button onclick="saveLineId()" class="save-btn">บันทึกข้อมูล</button>
+                        <button onclick="testLineNotification()" class="test-btn">ทดสอบการแจ้งเตือน</button>
+                    </div>
+
+                    <div class="settings-card">
+    <h4>👤 ตั้งค่าข้อมูลผู้ใช้งาน</h4>
+    
+    <div class="form-group">
+        <label>User UUID:</label>
+        <input type="text" id="setupUserId" class="form-input" placeholder="กำลังโหลดรหัส..." readonly>
+    </div>
+    
+    <div class="btn-group">
+        <button onclick="saveUserToStorage()" class="save-btn">บันทึกรหัสผู้ใช้งาน</button>
+    </div>
+</div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    
+
+    <!-- 🌟 Bottom Navigation (แสดงเฉพาะในมือถือ) 🌟 -->
+    <nav class="bottom-nav">
+        <a href="admin.html">
+            <span class="nav-icon">💊</span>
+            <span class="nav-text">จัดการยา</span>
+        </a>
+        <a href="history.html">
+            <span class="nav-icon">🕒</span>
+            <span class="nav-text">ประวัติ</span>
+        </a>
+        <a href="analytics.html">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">สรุปผล</span>
+        </a>
+        <!-- เพิ่มคลาส active ให้ตรงกับหน้าปัจจุบัน (หน้าตั้งค่า) -->
+        <a href="settings.html" class="active">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">ตั้งค่า</span>
+        </a>
+    </nav>
+
+    <script src="settings.js"></script>
+    
+    <script>
+        document.getElementById('openSidebar')?.addEventListener('click', function() {
+            document.getElementById('sidebar').classList.add('open');
+        });
+        document.getElementById('closeSidebar')?.addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - MedCare</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        body {
+            /* โทนสีฟ้า-ขาว สว่าง สบายตา */
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ---------------------------------
+           หน้า Intro (หน้าแรกที่มีปุ่มกด)
+        --------------------------------- */
+        #introScreen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            transition: all 0.8s ease-in-out;
+        }
+
+        .app-logo-text {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1565C0;
+            margin-bottom: 10px;
+            text-shadow: 0px 4px 10px rgba(21, 101, 192, 0.2);
+            animation: slideUpFade 1s ease-out;
+        }
+
+        .app-subtitle {
+            font-size: 18px;
+            color: #455A64;
+            margin-bottom: 40px;
+            animation: slideUpFade 1.2s ease-out;
+        }
+
+        .btn-start {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #1976D2;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+            transition: all 0.3s ease;
+            animation: slideUpFade 1.4s ease-out;
+        }
+
+        .btn-start:hover {
+            background-color: #1565C0;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+        }
+
+        /* ---------------------------------
+           หน้าต่างล็อกอิน
+        --------------------------------- */
+        #loginScreen {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            opacity: 0;
+            transform: translateY(50px);
+            visibility: hidden;
+            transition: all 0.8s ease-in-out;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .login-card h2 {
+            text-align: center;
+            color: #1565C0;
+            font-size: 28px;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #37474F;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            color: #263238;
+            background-color: #F5F7FA;
+            border: 1px solid #CFD8DC;
+            border-radius: 10px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #2196F3;
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            color: #546E7A;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .remember-me input {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            accent-color: #1976D2;
+            cursor: pointer;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #1976D2;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-login:hover {
+            background-color: #1565C0;
+        }
+
+        .hide-intro {
+            opacity: 0;
+            transform: translateY(-50px);
+            visibility: hidden;
+        }
+
+        .show-login {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            visibility: visible !important;
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="introScreen">
+        <h1 class="app-logo-text">MedCare</h1>
+        <p class="app-subtitle">ระบบผู้ช่วยแจ้งเตือนการทานยา</p>
+        <button id="startBtn" class="btn-start">เริ่มต้นใช้งาน</button>
+    </div>
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <h2>เข้าสู่ระบบ</h2>
+            <form id="authForm">
+                <div class="input-group">
+                    <label for="email">อีเมล (Email)</label>
+                    <input type="email" id="email" placeholder="กรอกอีเมลของคุณ" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">รหัสผ่าน (Password)</label>
+                    <input type="password" id="password" placeholder="กรอกรหัสผ่าน" required>
+                </div>
+                
+                <label class="remember-me">
+                    <input type="checkbox" id="rememberMe"> จำรหัสผ่านของฉันไว้ในเครื่องนี้
+                </label>
+                
+                <button type="submit" id="submitBtn" class="btn-login">เข้าสู่ระบบ</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ตั้งค่า Supabase ของคุณ
+        const supabaseUrl = 'https://gvscgakbgbvesvzggrcj.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2c2NnYWtiZ2J2ZXN2emdncmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMzMxNzgsImV4cCI6MjA5NjkwOTE3OH0.HGFcfB775PibKpCtEkLT3ex9kEPiQrysdizpltcP1Mk';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 1. จัดการปุ่ม "เริ่มต้นใช้งาน"
+        document.getElementById('startBtn').addEventListener('click', function() {
+            document.getElementById('introScreen').classList.add('hide-intro');
+            document.getElementById('loginScreen').classList.add('show-login');
+        });
+
+        // 2. ระบบจำรหัสผ่าน
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedEmail = localStorage.getItem("medcare_email");
+            const savedPassword = localStorage.getItem("medcare_password");
+            const rememberCheckbox = document.getElementById("rememberMe");
+
+            if (savedEmail && savedPassword) {
+                document.getElementById("email").value = savedEmail;
+                document.getElementById("password").value = savedPassword;
+                rememberCheckbox.checked = true;
+            }
+        });
+
+        // 3. จัดการตอนกดปุ่ม "เข้าสู่ระบบ"
+        document.getElementById("authForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById("submitBtn");
+            submitBtn.innerText = "กำลังตรวจสอบ...";
+            submitBtn.disabled = true;
+            
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const isRememberChecked = document.getElementById("rememberMe").checked;
+
+            if (isRememberChecked) {
+                localStorage.setItem("medcare_email", email);
+                localStorage.setItem("medcare_password", password);
+            } else {
+                localStorage.removeItem("medcare_email");
+                localStorage.removeItem("medcare_password");
+            }
+
+            // เข้าสู่ระบบผ่าน Supabase
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                let errorMsg = "เข้าสู่ระบบไม่สำเร็จ";
+                if (error.message.includes("Invalid login credentials")) {
+                    errorMsg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง";
+                } else {
+                    errorMsg = error.message;
+                }
+                alert(errorMsg);
+                submitBtn.innerText = "เข้าสู่ระบบ";
+                submitBtn.disabled = false;
+            } else {
+                // ล็อกอินสำเร็จ เด้งไปหน้า admin.html
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติการทานยา - MedCare</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="admin.css">
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f9; margin: 0; }
+        
+        /* ---------------------------------------------------
+           ส่วน Topbar & Header
+        --------------------------------------------------- */
+        .user-profile { font-weight: 500; color: #1e3d59; margin-right: 15px; }
+        .logout-btn { 
+            background-color: #e74c3c; color: white; border: none; padding: 8px 15px; 
+            border-radius: 8px; cursor: pointer; font-family: 'Sarabun'; font-weight: 500; transition: background 0.3s;
+        }
+        .logout-btn:hover { background-color: #c0392b; }
+
+        .card { 
+            background: white; border-radius: 16px; padding: 25px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04); border: 1px solid #f0f2f5; 
+        }
+
+        /* ---------------------------------------------------
+           ส่วนช่องค้นหา (Filter Section)
+        --------------------------------------------------- */
+        .filter-section {
+            display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; align-items: center;
+            background: #ffffff; padding: 20px; border-radius: 12px; 
+            border: 1px solid #eef2f5; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .filter-section label { font-weight: 600; color: #1e3d59; font-size: 16px; }
+        
+        .filter-section input[type="date"] {
+            padding: 10px 15px; border: 1px solid #dcdde1; border-radius: 8px; 
+            font-family: 'Sarabun'; font-size: 15px; outline: none; transition: border 0.3s;
+            color: #2f3640;
+        }
+        .filter-section input[type="date"]:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
+        
+        .filter-section button {
+            padding: 10px 20px; border-radius: 8px; font-weight: 600; font-family: 'Sarabun';
+            font-size: 15px; cursor: pointer; transition: all 0.3s ease;
+        }
+        #applyFilterBtn { 
+            background-color: #3498db; color: white; border: none; 
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2); 
+        }
+        #applyFilterBtn:hover { background-color: #2980b9; transform: translateY(-2px); }
+        
+        #resetFilterBtn { 
+            background-color: #f1f2f6; color: #2f3640; border: 1px solid #dcdde1; 
+        }
+        #resetFilterBtn:hover { background-color: #e1e2e6; transform: translateY(-2px); }
+
+        /* ---------------------------------------------------
+           ส่วนตาราง (Table Section)
+        --------------------------------------------------- */
+        .table-wrapper { 
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; 
+            border-radius: 12px; border: 1px solid #eef2f5; 
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; background: white; }
+        
+        th { 
+            background-color: #f8f9fa; color: #1e3d59; font-weight: 600; 
+            padding: 16px; text-align: left; white-space: nowrap; border-bottom: 2px solid #eef2f5;
+        }
+        td { 
+            padding: 16px; border-bottom: 1px solid #eef2f5; color: #2f3640; vertical-align: middle; 
+        }
+        tr:hover td { background-color: #fbfcfd; }
+
+        .status-badge {
+            padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
+            color: white; background-color: #2ecc71; display: inline-block;
+            box-shadow: 0 2px 5px rgba(46, 204, 113, 0.2); white-space: nowrap;
+        }
+
+        /* ---------------------------------------------------
+           Bottom Navigation (ซ่อนในคอมพิวเตอร์)
+        --------------------------------------------------- */
+        .bottom-nav { display: none; }
+
+        /* =========================================
+           📱 โหมดมือถือ (Mobile Responsive)
+        ========================================= */
+        @media (max-width: 768px) {
+            /* เผื่อพื้นที่ด้านล่างสุดให้เมนู ไม่ให้บังเนื้อหา */
+            .app-container { padding-bottom: 100px; }
+            .content-wrapper { padding: 15px !important; overflow-x: hidden; }
+            
+            #openSidebar { display: none !important; }
+            .sidebar { display: none !important; }
+
+            /* ปรับ Topbar */
+            .topbar { flex-wrap: wrap; gap: 10px; padding: 15px; justify-content: space-between; }
+            .topbar-left { flex: 1; }
+            .page-title { font-size: 18px; margin: 0; font-weight: 700; color: #1e3d59; }
+            .user-profile { display: none; }
+            .logout-btn { font-size: 13px; padding: 6px 12px; }
+
+            .card { padding: 15px; border-radius: 16px; }
+
+            /* ปรับกล่องค้นหาให้เรียงลงมาเป็นแนวตั้ง */
+            .filter-section { flex-direction: column; align-items: stretch; padding: 15px; gap: 10px; }
+            .filter-section label { margin-bottom: -5px; }
+            .filter-section input[type="date"] { width: 100%; box-sizing: border-box; }
+            .filter-section button { width: 100%; }
+
+            /* 🌟 ดีไซน์ Bottom Navigation สไตล์แอปการแพทย์พรีเมียม 🌟 */
+            .bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+                left: 50%;
+                transform: translateX(-50%);
+                width: 92%;
+                background-color: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 24px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                z-index: 1000;
+                justify-content: space-around;
+                align-items: center;
+                padding: 8px 5px;
+            }
+
+            .bottom-nav a {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                color: #a4b0be;
+                font-size: 11px;
+                font-family: 'Sarabun', sans-serif;
+                font-weight: 500;
+                padding: 8px 15px;
+                border-radius: 18px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .bottom-nav a .nav-icon {
+                font-size: 22px;
+                margin-bottom: 2px;
+                filter: grayscale(100%);
+                opacity: 0.6;
+                transition: transform 0.3s ease;
+            }
+
+            /* สไตล์สำหรับปุ่มที่กำลังถูกเลือก (Active) */
+            .bottom-nav a.active { 
+                background-color: #ebf5fb; 
+                color: #2980b9; 
+                font-weight: 700;
+            }
+            .bottom-nav a.active .nav-icon { 
+                filter: grayscale(0%); 
+                opacity: 1; 
+                transform: translateY(-2px) scale(1.15); 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar (แสดงเฉพาะบนคอมพิวเตอร์) -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>MedCare</h2>
+                <button class="close-btn" id="closeSidebar">✖</button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="admin.html">จัดการข้อมูลยา</a>
+                <a href="history.html" class="active">ประวัติการทานยา</a>
+                <a href="analytics.html">แดชบอร์ดสุขภาพ</a>
+                <a href="settings.html">ตั้งค่าการแจ้งเตือน</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="openSidebar" class="menu-btn">☰</button>
+                    <h3 class="page-title">ประวัติการทานยา</h3>
+                </div>
+                <div>
+                    <span id="user-display-name" class="user-profile">กำลังโหลด...</span>
+                    <button id="logoutBtn" class="logout-btn">ออกจากระบบ</button>
+                </div>
+            </header>
+
+            <div class="content-wrapper" style="display: block; padding: 25px;">
+                <div class="card table-container" style="width: 100%; box-sizing: border-box;">
+                    
+                    <div class="filter-section">
+                        <label for="filterDate">เลือกวันที่:</label>
+                        <input type="date" id="filterDate">
+                        <button id="applyFilterBtn">ค้นหาข้อมูล</button>
+                        <button id="resetFilterBtn">ดูข้อมูลทั้งหมด</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>วันเวลาที่บันทึก</th>
+                                    <th>รหัสยา</th>
+                                    <th>ชื่อยา</th>
+                                    <th>ขนาด / วิธีทาน</th>
+                                    <th>สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr><td colspan="5" style="text-align:center;">กำลังโหลดข้อมูล...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 🌟 Bottom Navigation (แสดงเฉพาะในมือถือ) 🌟 -->
+    <nav class="bottom-nav">
+        <a href="admin.html">
+            <span class="nav-icon">💊</span>
+            <span class="nav-text">จัดการยา</span>
+        </a>
+        <!-- เพิ่มคลาส active ให้ตรงกับหน้าปัจจุบัน (หน้าประวัติ) -->
+        <a href="history.html" class="active">
+            <span class="nav-icon">🕒</span>
+            <span class="nav-text">ประวัติ</span>
+        </a>
+        <a href="analytics.html">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">สรุปผล</span>
+        </a>
+        <a href="settings.html">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">ตั้งค่า</span>
+        </a>
+    </nav>
+
+    <script src="history.js"></script>
+    
+    <script>
+        document.getElementById('openSidebar')?.addEventListener('click', function() {
+            document.getElementById('sidebar').classList.add('open');
+        });
+        document.getElementById('closeSidebar')?.addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+        });
+    </script>
+</body>
+</html>
