@@ -127,22 +127,29 @@ async function testLineNotification() {
 
 // ฟังก์ชันดึงข้อมูลมาแสดงเมื่อโหลดหน้า Settings
 async function loadUserData() {
-    // 1. ลองดึงจาก localStorage ก่อน
-    const savedId = localStorage.getItem('med_user_id');
     const inputField = document.getElementById('setupUserId');
     
-    if (savedId) {
-        inputField.value = savedId;
+    // 1. บังคับดึงข้อมูลจากระบบล็อกอินของ Supabase ก่อน (ชัวร์ที่สุด 100%)
+    const { data: { user }, error } = await supabaseClient.auth.getUser();
+    
+    if (user) {
+        // ถ้าระบบเจอว่าล็อกอินอยู่ ให้ดึง UUID จริงจากฐานข้อมูลมาใส่เลย
+        inputField.value = user.id; 
+        
+        // อัปเดต localStorage ให้เป็นค่าที่ถูกต้องเสมอโดยอัตโนมัติ
+        localStorage.setItem('med_user_id', user.id); 
     } else {
-        // 2. ถ้าไม่มีใน localStorage ให้ดึงจาก Auth User ของ Supabase
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
-            inputField.value = user.id; // ใช้ UUID ของระบบล็อกอินอัตโนมัติ
+        // 2. ถ้าไม่ได้ล็อกอิน (หรือ session หมดอายุ) ค่อยกลับไปดูใน localStorage
+        const savedId = localStorage.getItem('med_user_id');
+        if (savedId) {
+            inputField.value = savedId;
+        } else {
+            inputField.value = "ไม่พบการล็อกอิน กรุณาออกจากระบบแล้วเข้าใหม่";
         }
     }
 }
 
-// ฟังก์ชันบันทึกข้อมูล
+// ฟังก์ชันบันทึกข้อมูล (ใช้แบบเดิมที่คุณเขียนมาได้เลยครับ)
 function saveUserToStorage() {
     const id = document.getElementById('setupUserId').value.trim();
     if(id.length > 5) {
