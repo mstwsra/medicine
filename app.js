@@ -226,22 +226,50 @@ function startListening() {
 // ==========================================
 // 7. บันทึกข้อมูล
 // ==========================================
+// ==========================================
+// 7. บันทึกข้อมูล (ฉบับแก้ไขดักจับ Error และตรวจสอบรหัส)
+// ==========================================
 async function confirmMedication() {
     if (!currentMedicine) return;
     
     isWaitingForConfirm = false; 
 
-    const storedUserId = localStorage.getItem('med_user_id');
-    const finalUserId = storedUserId || currentMedicine.user_id;
+    let finalUserId = null;
 
+    // 1. ตรวจสอบก่อนว่าล็อกอินอยู่ไหม ถ้าล็อกอินอยู่ให้ใช้รหัสจริงจากระบบล็อกอินทันที
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            finalUserId = user.id;
+        }
+    } catch (authError) {
+        console.error("เช็ค Auth ล้มเหลว:", authError);
+    }
+
+    // 2. ถ้าไม่ได้ล็อกอิน ค่อยดึงจาก localStorage
     if (!finalUserId) {
-        updateUI('❌ ไม่พบข้อมูลผู้ใช้', 'กรุณาตั้งค่าผู้ใช้ในหน้าตั้งค่า');
-        speak("ไม่พบข้อมูลผู้ใช้ครับ");
+        finalUserId = localStorage.getItem('med_user_id');
+    }
+
+    // 3. ถ้ายังไม่มีอีก ค่อยดึงจากข้อมูลยา
+    if (!finalUserId) {
+        finalUserId = currentMedicine.user_id;
+    }
+
+    // 🌟 บรรทัดดักจับ (Debug): ปริ้นท์ค่าออกมาดูใน Console ของเบราว์เซอร์ 🌟
+    console.log("🔍 [DEBUG] ค่า user_id ที่กำลังจะส่งไปฐานข้อมูลคือ:", finalUserId);
+
+    // ตรวจสอบความถูกต้องของรหัสเบื้องต้นก่อนส่งไปบันทึก
+    if (!finalUserId || finalUserId.startsWith('U') || finalUserId.includes('ไม่พบ') || finalUserId.length < 20) {
+        console.error("❌ รหัสผู้ใช้ไม่ถูกต้อง:", finalUserId);
+        updateUI('❌ รหัสผู้ใช้ไม่ถูกต้อง', 'กรุณาตั้งค่า UUID ในหน้าตั้งค่าให้ถูกต้อง');
+        speak("ระบบตรวจพบรหัสผู้ใช้ไม่ถูกต้อง ไม่สามารถบันทึกข้อมูลได้ครับ");
         return;
     }
 
     updateUI('กำลังบันทึกข้อมูล...', '💾');
 
+    // ส่งข้อมูลไปบันทึกที่ Supabase
     const { error } = await supabaseClient.from('medication_logs').insert([{
         med_id: currentMedicine.id,
         user_id: finalUserId, 
@@ -250,7 +278,7 @@ async function confirmMedication() {
     }]);
 
     if (error) {
-        console.error("Error details:", error);
+        console.error("❌ บันทึกเข้า Supabase ไม่สำเร็จ:", error);
         updateUI('❌ บันทึกไม่สำเร็จ', error.message || 'เกิดข้อผิดพลาด');
         speak("ขออภัยครับ, บันทึกข้อมูลไม่สำเร็จ");
     } else {
